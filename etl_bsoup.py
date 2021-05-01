@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import json
 import pandas as pd
 import re
-from sqlalchemy import Column, Integer, FLoat, Date, String, VARCHAR
+from sqlalchemy import Column, Integer, Float, Date, String, VARCHAR
 from sqlalchemy.ext.declarative import declarative_base  
 
 
@@ -24,7 +24,7 @@ def extract_games(url):
             'link' : game['href'],
             'id' : link.group(2).replace('/', '') ,
             'name' : link.group(3).replace('/', ''),
-            
+            'price' : game.find('div', {'class': 'search_price'}).text.strip().split('€')[0],
             'tags': add_label(game['href'])
             }
        
@@ -60,7 +60,7 @@ if __name__ == "__main__":
         page_url = f'https://store.steampowered.com/search/results/?query&start={game}&count=50&dynamic_data=&sort_by=_ASC&snr=1_7_7_7000_7&filter=topsellers&tags=19&infinite=1'
         
         game_data.append(extract_games(page_url))
-    print(game_data)
+  
     
     game_df = pd.concat([pd.DataFrame(game )for game in game_data])
    
