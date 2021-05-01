@@ -3,6 +3,9 @@ from bs4 import BeautifulSoup
 import json
 import pandas as pd
 import re
+from sqlalchemy import Column, Integer, FLoat, Date, String, VARCHAR
+from sqlalchemy.ext.declarative import declarative_base  
+
 
 def extract_games(url):
     game_list = []
@@ -21,7 +24,7 @@ def extract_games(url):
             'link' : game['href'],
             'id' : link.group(2).replace('/', '') ,
             'name' : link.group(3).replace('/', ''),
-            #'review' : game.find('span', {'class': 'search_review_summary positive'}),
+            
             'tags': add_label(game['href'])
             }
        
@@ -41,6 +44,8 @@ def add_label(game_url):
 
     return tag_list
      
+
+
 
 
 
