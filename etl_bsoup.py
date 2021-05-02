@@ -4,6 +4,7 @@ import json
 import pandas as pd
 import re
 import sqlalchemy
+#pip3 install psycopg2
 
 def extract_games(url):
     game_list = []
@@ -17,13 +18,21 @@ def extract_games(url):
     soup = BeautifulSoup(data_to_parse, 'html.parser')
 
     for game in soup.find_all('a'):
-        link = re.search(
-            '(https://store.steampowered.com/+[a-z]*)+(/[0-9]*)+(/[0-aA-zZ]*)', game['href'])
-        game_detail = add_label(game['href'])
-
-        genre_game = game_detail[1][0] if len(game_detail[1]) > 0 else 'no_genre'
+        link = re.search('(https://store.steampowered.com/+[a-z]*)+(/[0-9]*)+(/[0-aA-zZ]*)', game['href'])
+        print(game['href'])
         game_id = link.group(2).replace('/', '')
 
+        try:
+            game_detail = add_label(game['href'])
+       
+
+            genre_game = game_detail[1][0] if len(game_detail[1]) > 0 else 'no_genre'
+        except:
+            game_detail = ['no_user_tags']
+            genre_game = ['no_genre']
+
+        print(game_detail)
+            
         game_dict = {
             'link': game['href'],
             'id': game_id,
@@ -59,14 +68,6 @@ def add_label(game_url):
 
 
 def transform(df):
-    pk_violation = []
-
-    # check primary key
-    if df['id'].is_unique:
-        pass
-    else:
-        df = df.drop_duplicates()
-        raise Exception('primary ')
 
     # check null values
     if df.isnull().values.any():
@@ -76,30 +77,34 @@ def transform(df):
 
 
 if __name__ == "__main__":
-    # game_data = []
+    game_data = []
 
-    # url = 'https://store.steampowered.com/search/results/?query&start=0&count=50&dynamic_data=&sort_by=_ASC&snr=1_7_7_7000_7&filter=topsellers&tags=19&infinite=1'
+    url = 'https://store.steampowered.com/search/results/?query&start=0&count=50&dynamic_data=&sort_by=_ASC&snr=1_7_7_7000_7&filter=topsellers&tags=19&infinite=1'
 
-    # total_games = requests.get(url).json()['total_count']
+    total_games = requests.get(url).json()['total_count']
 
-    # for game in range(0, 50, 50):
-    #     page_url = f'https://store.steampowered.com/search/results/?query&start={game}&count=50&dynamic_data=&sort_by=_ASC&snr=1_7_7_7000_7&filter=topsellers&tags=19&infinite=1'
+    for game in range(0, total_games, 50):
+        page_url = f'https://store.steampowered.com/search/results/?query&start={game}&count=50&dynamic_data=&sort_by=_ASC&snr=1_7_7_7000_7&filter=topsellers&tags=19&infinite=1'
 
-    #     game_data.append(extract_games(page_url))
+        game_data.append(extract_games(page_url))
 
-    # game_df = pd.concat([pd.DataFrame(game )for game in game_data])
-    # game_df.drop_duplicates(subset=['id'])
+    
+    game_df = pd.concat([pd.DataFrame(game )for game in game_data])
 
-    # game_df.to_csv('game_data_export.csv', index = False)
+    if transform(game_df):
+        print('Data OK')
 
-    data = pd.read_csv('game_data_export.csv')
+    game_df.drop_duplicates(subset=['id'])
 
-    dup_data = data[data.duplicated() == True]
-    dup_data.to_csv('dup_data.csv')
+    game_df.to_csv('game_data_export.csv', index = False)
+
+    #data = pd.read_csv('game_data_export.csv')
+
+    #load data
 
     engine = sqlalchemy.create_engine('postgresql://aliescont:c0d1ng@localhost:5432/postgres')
     con = engine.connect()
 
     table_name = 'games'
-    data.to_sql(table_name, con, if_exists= 'append', index = False)
+    game_df.to_sql(table_name, con, if_exists= 'append', index = False)
     con.close()
